@@ -2,23 +2,7 @@ name: Test install on Linux
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version to install: latest, 0.2.0, or v0.2.0"
-        required: false
-        default: "latest"
-        type: string
-      install-dir:
-        description: "Optional install dir override"
-        required: false
-        default: ""
-        type: string
-      add-to-path:
-        description: "Add installed binary dir to PATH for later steps"
-        required: false
-        default: true
-        type: boolean
-
+  
 permissions:
   contents: read
 
@@ -33,10 +17,6 @@ jobs:
       - name: Install lokex-cli via local action
         id: install
         uses: ./
-        with:
-          version: ${{ inputs.version }}
-          install-dir: ${{ inputs.install-dir }}
-          add-to-path: ${{ inputs.add-to-path }}
 
       - name: Show install outputs
         shell: bash
@@ -52,7 +32,6 @@ jobs:
           "${{ steps.install.outputs.bin-path }}" version
 
       - name: Verify installed binary via PATH
-        if: ${{ inputs.add-to-path }}
         shell: bash
         run: |
           set -euo pipefail
