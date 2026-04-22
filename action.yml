@@ -1,0 +1,80 @@
+name: "Install lokex-cli"
+description: "Install lokex-cli on Linux and Windows GitHub Actions runners"
+
+inputs:
+  repo:
+    description: "GitHub repository in owner/name form"
+    required: false
+    default: "bodrovis/lokex-cli"
+
+  bin-name:
+    description: "Binary name to install"
+    required: false
+    default: "lokex-cli"
+
+  version:
+    description: "Release version: latest, 0.2.0, or v0.2.0"
+    required: false
+    default: "latest"
+
+  install-dir:
+    description: "Install directory override"
+    required: false
+    default: ""
+
+  add-to-path:
+    description: "Whether to add install-dir to PATH for subsequent steps"
+    required: false
+    default: "true"
+
+outputs:
+  install-dir:
+    description: "Resolved install directory"
+    value: ${{ steps.install-linux.outputs.install-dir || steps.install-windows.outputs.install-dir }}
+
+  bin-path:
+    description: "Full path to the installed binary"
+    value: ${{ steps.install-linux.outputs.bin-path || steps.install-windows.outputs.bin-path }}
+
+branding:
+  icon: 'box'
+  color: 'black'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install on Linux
+      id: install-linux
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_BIN_NAME: ${{ inputs.bin-name }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_INSTALL_DIR: ${{ inputs.install-dir }}
+        INPUT_ADD_TO_PATH: ${{ inputs.add-to-path }}
+      run: |
+        chmod +x "$ACTION_PATH/scripts/install-linux-action.sh"
+        "$ACTION_PATH/scripts/install-linux-action.sh"
+
+    - name: Install on Windows
+      id: install-windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_BIN_NAME: ${{ inputs.bin-name }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_INSTALL_DIR: ${{ inputs.install-dir }}
+        INPUT_ADD_TO_PATH: ${{ inputs.add-to-path }}
+      run: |
+        & "$env:ACTION_PATH\scripts\install-windows-action.ps1"
+
+    - name: Fail on unsupported runner OS
+      if: runner.os != 'Linux' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        echo "This action currently supports Linux and Windows only." >&2
+        exit 1

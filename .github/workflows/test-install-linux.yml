@@ -1,0 +1,60 @@
+name: Test install on Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to install: latest, 0.2.0, or v0.2.0"
+        required: false
+        default: "latest"
+        type: string
+      install-dir:
+        description: "Optional install dir override"
+        required: false
+        default: ""
+        type: string
+      add-to-path:
+        description: "Add installed binary dir to PATH for later steps"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out action repo
+        uses: actions/checkout@v6
+
+      - name: Install lokex-cli via local action
+        id: install
+        uses: ./
+        with:
+          version: ${{ inputs.version }}
+          install-dir: ${{ inputs.install-dir }}
+          add-to-path: ${{ inputs.add-to-path }}
+
+      - name: Show install outputs
+        shell: bash
+        run: |
+          echo "install-dir: ${{ steps.install.outputs.install-dir }}"
+          echo "bin-path:    ${{ steps.install.outputs.bin-path }}"
+
+      - name: Verify installed binary by full path
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "${{ steps.install.outputs.bin-path }}"
+          "${{ steps.install.outputs.bin-path }}" version
+
+      - name: Verify installed binary via PATH
+        if: ${{ inputs.add-to-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v lokex-cli
+          lokex-cli version

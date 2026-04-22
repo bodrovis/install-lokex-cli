@@ -1,0 +1,62 @@
+name: Test install on Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to install: latest, 0.2.0, or v0.2.0"
+        required: false
+        default: "latest"
+        type: string
+      install-dir:
+        description: "Optional install dir override"
+        required: false
+        default: ""
+        type: string
+      add-to-path:
+        description: "Add installed binary dir to PATH for later steps"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out action repo
+        uses: actions/checkout@v6
+
+      - name: Install lokex-cli via local action
+        id: install
+        uses: ./
+        with:
+          version: ${{ inputs.version }}
+          install-dir: ${{ inputs.install-dir }}
+          add-to-path: ${{ inputs.add-to-path }}
+
+      - name: Show install outputs
+        shell: pwsh
+        run: |
+          Write-Host "install-dir: ${{ steps.install.outputs.install-dir }}"
+          Write-Host "bin-path:    ${{ steps.install.outputs.bin-path }}"
+
+      - name: Verify installed binary by full path
+        shell: pwsh
+        run: |
+          $bin = "${{ steps.install.outputs.bin-path }}"
+          if (-not (Test-Path -LiteralPath $bin)) {
+            throw "Binary not found: $bin"
+          }
+          & $bin version
+
+      - name: Verify installed binary via PATH
+        if: ${{ inputs.add-to-path }}
+        shell: pwsh
+        run: |
+          $cmd = Get-Command lokex-cli -ErrorAction Stop
+          Write-Host "Resolved command: $($cmd.Source)"
+          & lokex-cli version
